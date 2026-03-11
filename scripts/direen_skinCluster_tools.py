@@ -61,7 +61,9 @@ import json
 import logging
 import os
 import re
+import sys
 import time
+import types
 from collections import defaultdict
 from functools import partial, wraps
 from pathlib import Path
@@ -84,7 +86,18 @@ GEOMETRY_TYPES = frozenset({"mesh", "lattice", "subdiv", "nurbsSurface", "nurbsC
 # MPxCommand.  The command is auto-loaded on first call to ``_undo_commit``.
 
 _UNDO_CMD = "_skinclusterUtilsUndo"
-_undo_shared: dict = {"undo": None, "redo": None}
+
+# Data is shared between the Python module and Maya plugin contexts via a
+# synthetic module in sys.modules (the same approach used by apiundo.py).
+# This is necessary because loadPlugin re-executes the file in a separate
+# scope, so a plain module-level dict would exist as two independent copies.
+_UNDO_SHARED_NAME = "_skinclusterUtilsUndoShared"
+if _UNDO_SHARED_NAME not in sys.modules:
+    sys.modules[_UNDO_SHARED_NAME] = types.ModuleType(_UNDO_SHARED_NAME)
+
+_undo_shared = sys.modules[_UNDO_SHARED_NAME]
+_undo_shared.undo = None
+_undo_shared.redo = None
 
 
 def maya_useNewAPI():
@@ -95,10 +108,10 @@ class _UndoCommand(OpenMaya2.MPxCommand):
     """Undoable command that delegates to arbitrary Python callbacks."""
 
     def doIt(self, args):
-        self._undo = _undo_shared["undo"]
-        self._redo = _undo_shared["redo"]
-        _undo_shared["undo"] = None
-        _undo_shared["redo"] = None
+        self._undo = _undo_shared.undo
+        self._redo = _undo_shared.redo
+        _undo_shared.undo = None
+        _undo_shared.redo = None
 
     def undoIt(self):
         self._undo()
@@ -133,8 +146,8 @@ def _undo_commit(undo, redo=lambda: None):
     if not hasattr(cmds, _UNDO_CMD):
         cmds.loadPlugin(__file__.replace(".pyc", ".py"), quiet=True)
 
-    _undo_shared["undo"] = undo
-    _undo_shared["redo"] = redo
+    _undo_shared.undo = undo
+    _undo_shared.redo = redo
     getattr(cmds, _UNDO_CMD)()
 
 
