@@ -15,11 +15,21 @@ from maya import cmds
 
 _MODULE_NAME = "direen_skinCluster_tools"
 
-_PRESS_CMD = (
-    "import direen_skinCluster_tools\n"
-    "mm = direen_skinCluster_tools.SkinningMarkingMenu()\n"
-)
 _RELEASE_CMD = "mm.remove()\n"
+
+
+def _build_press_cmd(ctrl=False, alt=False):
+    """Build the press command string with the appropriate modifier flags."""
+    args = []
+    if ctrl:
+        args.append("ctrl=True")
+    if alt:
+        args.append("alt=True")
+    arg_str = ", ".join(args)
+    return (
+        "import direen_skinCluster_tools\n"
+        "mm = direen_skinCluster_tools.SkinningMarkingMenu({})\n".format(arg_str)
+    )
 
 
 def _install_module():
@@ -186,7 +196,7 @@ def _prompt_hotkey_binding():
         annotation="direen SkinningMarkingMenu Press",
         category="User",
         commandLanguage="python",
-        command=_PRESS_CMD,
+        command=_build_press_cmd(ctrl=use_ctrl, alt=use_alt),
     )
     cmds.runTimeCommand(
         release_cmd_name,
