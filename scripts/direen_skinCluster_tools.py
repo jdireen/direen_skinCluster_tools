@@ -87,10 +87,6 @@ GEOMETRY_TYPES = frozenset({"mesh", "lattice", "subdiv", "nurbsSurface", "nurbsC
 
 _UNDO_CMD = "_skinclusterUtilsUndo"
 
-# Data is shared between the Python module and Maya plugin contexts via a
-# synthetic module in sys.modules (the same approach used by apiundo.py).
-# This is necessary because loadPlugin re-executes the file in a separate
-# scope, so a plain module-level dict would exist as two independent copies.
 _UNDO_SHARED_NAME = "_skinclusterUtilsUndoShared"
 if _UNDO_SHARED_NAME not in sys.modules:
     sys.modules[_UNDO_SHARED_NAME] = types.ModuleType(_UNDO_SHARED_NAME)
